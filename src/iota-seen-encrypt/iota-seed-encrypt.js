@@ -51,7 +51,7 @@ async function encryptSeed(seed, passphrase, toughness, salt) {
     return encoded;
 }
 
-async function decryptSeed(encrypted, passphrase) {
+async function decryptSeed(encrypted, passphrase, encoding) {
     let info = extractInfo(encrypted);
     let salt =  info.salt;
     let toughness =  info.toughness;
@@ -75,6 +75,7 @@ async function decryptSeed(encrypted, passphrase) {
         throw Error('Inncorrect passphrase');
     }
 
+    seed = encodeSeed(seed, encoding);
     
     return seed;
 }
@@ -87,12 +88,16 @@ const tempEncoding = {
 }
 
 function generateSeed(encoding) {
-    encoding = encoding || 'HEX';
-    let first_encoding = (tempEncoding.hasOwnProperty(encoding)) ? tempEncoding[encoding] : encoding;
     let seed = crypto.randomBytes(SEED_LEN);
-    
+    return encodeSeed(seed, encoding);
+}
+
+function encodeSeed(byteSeed, encoding) {
+    encoding = encoding || 'bip39';
+    let seed;
+    let first_encoding = (tempEncoding.hasOwnProperty(encoding)) ? tempEncoding[encoding] : encoding;
     if (first_encoding)
-        seed =  seed.toString(first_encoding);
+        seed =  byteSeed.toString(first_encoding);
 
     if (encoding === 'HEX') seed = seed.toUpperCase();
     else if (encoding === 'bip39') seed = seedToMnemonic(seed);
