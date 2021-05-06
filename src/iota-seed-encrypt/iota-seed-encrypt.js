@@ -4,8 +4,7 @@
 const crypto = require('crypto');
 const xor = require('buffer-xor');
 const bip39 = require('bip39');
-const aes = require('aes-js');
-const { argon2id, argon2Verify } = require('hash-wasm');
+const { argon2id } = require('hash-wasm');
 const base32 = require('base32.js');
 
 
@@ -16,37 +15,39 @@ const SEED_LEN = 32;
 const SALT_LEN = 8;
 const CHECK_LEN = 4;
 const VERSION = 0x01;
-
+const BASE32_TYPE = 'crockford';
+const VALID_ENCODINGS = ['bip39', 'hex', 'HEX', 'binary'];
 
 async function generateEncryptedSeed(passphrase, toughness, salt) {
     const seed = generateSeed('binary');
     return await encryptSeed(seed, passphrase, toughness, salt);
 }
 
-async function encryptSeed(seed, passphrase, toughness, salt) {
+async function encryptSeed(seed, passphrase, toughness, salt, encoding) {
     toughness = toughness || 0;
-    salt =  generateSalt(SALT_LEN);
-    seed[0] = 0xF0;
-    let len = seed.length;
+    salt = salt || generateSalt(SALT_LEN);
+    encoding = encoding || guessEncoding(seed);
+
+    if (!VALID_ENCODINGS.includes(encoding)) {
+        throw Error('Does not recognize the format of the seed');
+    }
+
+    let byteSeed = decodeSeedToBytes(seed, encoding);
+    let len = byteSeed.length;
     let time = Date.now();
     const key64 = await generateKey(passphrase, salt, 2*len, toughness);
     time = Date.now() - time;
     let key1 = key64.slice(0, len);
     let key2 = key64.slice(len);
 
-    let encrypted = xor(seed, key1);
+    let encrypted = xor(byteSeed, key1);
 
 
     let checksum = await generateChecksum(key2, encrypted, CHECK_LEN);
     let header = new Uint8Array([VERSION]);
     
 
-    let merged = merge(header, encrypted, salt, checksum);
-    console.log('DEBUG: salt: ', salt);
-    console.log('DEBUG: checksum: ', checksum);
-
-    let encoded = base32.encode(merged);
-    if (toughness != 0) encoded += ':T'+toughness;
+    let encoded = packInfo({header, encrypted, salt, checksum, toughness});
     
     return encoded;
 }
@@ -75,34 +76,16 @@ async function decryptSeed(encrypted, passphrase, encoding) {
         throw Error('Inncorrect passphrase');
     }
 
-    seed = encodeSeed(seed, encoding);
+    seed = encodeByteSeed(seed, encoding);
     
     return seed;
 }
 
 
 
-const tempEncoding = {
-    'bip39': 'hex',
-    'binary': null,
-}
-
 function generateSeed(encoding) {
     let seed = crypto.randomBytes(SEED_LEN);
-    return encodeSeed(seed, encoding);
-}
-
-function encodeSeed(byteSeed, encoding) {
-    encoding = encoding || 'bip39';
-    let seed;
-    let first_encoding = (tempEncoding.hasOwnProperty(encoding)) ? tempEncoding[encoding] : encoding;
-    if (first_encoding)
-        seed =  byteSeed.toString(first_encoding);
-
-    if (encoding === 'HEX') seed = seed.toUpperCase();
-    else if (encoding === 'bip39') seed = seedToMnemonic(seed);
-
-    return seed;
+    return encodeByteSeed(seed, encoding);
 }
 
 
@@ -113,7 +96,7 @@ async function generateKey(passphrase, salt, len, toughness) {
     let encryptionKey = await argon2id(opts);
     let time = Date.now() - start;
     //console.log('Generating key in '+time+' ms: '+Buffer.from(encryptionKey).toString('base64'));
-    console.log('T: '+toughness+' Mem: '+(Math.log(opts.memorySize)/Math.log(2)).toFixed(1)+' iter: '+opts.iterations+': '+time+' ms: '+Buffer.from(encryptionKey).toString('hex'));
+    //console.log('T: '+toughness+' Mem: '+(Math.log(opts.memorySize)/Math.log(2)).toFixed(1)+' iter: '+opts.iterations+': '+time+' ms: '+Buffer.from(encryptionKey).toString('hex'));
     return encryptionKey;
 }
 
@@ -144,8 +127,14 @@ async function generateChecksum(key, encrypted, len) {
 }
 
 function packInfo(info) {
-    return info;
+    
+    let merged = merge(info.header, info.encrypted, info.salt, info.checksum);
+    let encoded = base32.encode(merged, { type: BASE32_TYPE });
+    if (info.toughness != 0) encoded += ':T'+info.toughness;
+
+    return encoded;
 }
+
 function extractInfo(qrstr) {
     let split = qrstr.split(':');
     let toughness = 0;
@@ -159,8 +148,8 @@ function extractInfo(qrstr) {
             }
         }
     }
-    let bytes = base32.decode(split[0]);
-
+    let bytes = base32.decode(split[0], { type: BASE32_TYPE });
+    
     let version = bytes.slice(0, 1)[0];
     let encrypted = bytes.slice(1, 1+SEED_LEN);
     let salt = bytes.slice(1+SEED_LEN, 1+SEED_LEN+SALT_LEN);
@@ -169,13 +158,62 @@ function extractInfo(qrstr) {
     return {version, salt, encrypted, checksum, toughness};
 }
 
+
+const tempEncoding = {
+    'bip39': 'hex',
+    'binary': null,
+}
+
+
+function guessEncoding(seed) {
+    if (seed  instanceof Uint8Array) return 'binary';
+    else if (Array.isArray(seed)) return 'binary';
+    else if (typeof seed === 'string') {
+        seed = seed.trim();
+        if (seed.match(/^[0-9a-fA-F]$/) && seed.length === SEED_LEN*2) return 'hex';
+        else if (seed.split(/\s+/).length == SEED_LEN/4*3) return 'bip39';
+    }
+    
+    return undefined;
+}
+
+function encodeByteSeed(byteSeed, encoding) {
+    encoding = encoding || 'bip39';
+    let seed = byteSeed;
+    let first_encoding = (tempEncoding.hasOwnProperty(encoding)) ? tempEncoding[encoding] : encoding;
+    if (first_encoding) {
+        if (Array.isArray(byteSeed) && encoding.toLowerCase() == 'hex') {
+            seed = byteSeed.map(x => x.toString(16).padStart(2, '0')).join('')
+        } else {
+            seed =  byteSeed.toString(first_encoding);
+        }
+    }
+
+    if (encoding === 'HEX') seed = seed.toUpperCase();
+    else if (encoding === 'bip39') seed = seedToMnemonic(seed);
+
+    return seed;
+}
+
+
+function decodeSeedToBytes(seed, encoding) {
+    encoding = encoding || guessEncoding(seed);
+    if (encoding === 'bip39') seed = mnemonicToSeed(seed);
+    else if(encoding && encoding.toLowerCase() === 'hex') seed = Buffer.from(seed, 'hex');
+
+    return seed;
+}
+
+
 function seedToMnemonic(seed) {
     const mnemonic = bip39.entropyToMnemonic(seed);
     return mnemonic;
 }
 
 function mnemonicToSeed(mnemonic) {
-    const seed = bip39.mnemonicToEntropy(mnemonic);
+    mnemonic = mnemonic.replace(/\s+/g, ' ');
+    let seed = bip39.mnemonicToEntropy(mnemonic);
+    seed = decodeSeedToBytes(seed, 'hex');
     return seed;
 }
 
@@ -217,6 +255,7 @@ function argonOptions(passphrase, salt, hashLength, toughness) {
     let iterations = 8 * Math.pow(sq2, toughness);
     if (typeof passphrase === 'string')  passphrase =  passphrase.normalize();
     if (typeof salt === 'string')  salt =  salt.normalize();
+    else if (Array.isArray(salt) && salt.length == SALT_LEN)  salt =  Buffer.from(salt);
 
     let opts = {
         memorySize: Math.floor(memory), //kilobytes
@@ -241,4 +280,6 @@ module.exports = {
     encryptSeed,
     decryptSeed,
     generateKey,
+    encodeByteSeed,
+    decodeSeedToBytes,
 }
