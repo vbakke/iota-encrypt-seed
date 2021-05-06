@@ -1,17 +1,18 @@
 TODO
 ====
 
-- TEST: Argon speed tester
-- TEST: Argon test different implementations
 
 
-- Generate encryption key
-- Encrypt seed
-- Encode encrypted seed for QR
 
 
 DONE
 ====
+- Input seed from mnemonics
+- Create testcases
 - Generate seed
 - Make seed from BIP 0039 mnemonic
 - Make BIP 0039 mnemonic from seed
+- Generate encryption key
+- Encrypt seed
+- Encode encrypted seed for QR
+- Decrypt seed
