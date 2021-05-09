@@ -73,7 +73,7 @@ async function decryptSeed(encrypted, passphrase, encoding) {
     let checksum = await generateChecksum(key2, info.encrypted, CHECK_LEN);
 
     if (!equalBytes(checksum,  info.checksum)) {
-        throw Error('Inncorrect passphrase');
+        throw Error('Incorrect passphrase');
     }
 
     seed = encodeByteSeed(seed, encoding);
@@ -149,8 +149,9 @@ function extractInfo(qrstr) {
         }
     }
     let bytes = base32.decode(split[0], { type: BASE32_TYPE });
-    
-    let version = bytes.slice(0, 1)[0];
+    bytes = Uint8Array.from(bytes);
+
+    let version = bytes[0];
     let encrypted = bytes.slice(1, 1+SEED_LEN);
     let salt = bytes.slice(1+SEED_LEN, 1+SEED_LEN+SALT_LEN);
     let checksum = bytes.slice(1+SEED_LEN+SALT_LEN);
@@ -170,8 +171,11 @@ function guessEncoding(seed) {
     else if (Array.isArray(seed)) return 'binary';
     else if (typeof seed === 'string') {
         seed = seed.trim();
-        if (seed.match(/^[0-9a-fA-F]+$/) && seed.length === SEED_LEN*2) return 'hex';
-        else if (seed.split(/\s+/).length == SEED_LEN/4*3) return 'bip39';
+        if (seed.includes(':')) seed = seed.split(':')[0];
+        if (seed.split(/\s+/).length == SEED_LEN/4*3) return 'bip39';
+        else if (seed.match(/^[0-9A-F]+$/) && seed.length === SEED_LEN*2) return 'HEX';
+        else if (seed.match(/^[0-9a-fA-F]+$/) && seed.length === SEED_LEN*2) return 'hex';
+        else if (seed.match(/^[0-9A-TV-Z]+$/) && seed.length === Math.ceil((1+SEED_LEN+SALT_LEN+CHECK_LEN)/5)*8) return 'ENCRYPTED';
     }
     
     return undefined;
@@ -275,6 +279,8 @@ function argonOptions(passphrase, salt, hashLength, toughness) {
 module.exports = {
     SEED_LEN,
     SALT_LEN,
+    VALID_ENCODINGS,
+    guessEncoding,
     generateSeed,
     generateEncryptedSeed,
     encryptSeed,

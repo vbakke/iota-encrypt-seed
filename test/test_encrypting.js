@@ -18,6 +18,12 @@ module.exports = function () {
                 seed: "useless job abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon check",
             },
             {
+                seed: "0102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1FFF",
+                salt: [1, 2, 3, 4, 5, 6, 7, 8],
+                passphrase: 'Ƥāssφräsę',
+                encrypted: '053RB5CQF3QD21CNPR89V3QZD4QTXFP6CX4K9EB0F57WVCRHG1P7C0820C20A1G7139YD0EV'
+            },
+            {
                 seed: "useless job abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon check",
                 salt: [1, 2, 3, 4, 5, 6, 7, 8],
                 toughness: -2,
@@ -57,7 +63,8 @@ module.exports = function () {
                 if (test.encrypted) assert.strictEqual(encrypted, test.encrypted, 'For ' + passphrase);
                 console.log('DBG: Encrypted seed:', encrypted);
 
-                let decrypted = await vault.decryptSeed(encrypted, passphrase);
+                let encoding = vault.guessEncoding(seed);
+                let decrypted = await vault.decryptSeed(encrypted, passphrase, encoding);
                 assert.isNotNull(decrypted, 'For ' + passphrase);
                 assert.strictEqual(decrypted, seed, 'For ' + passphrase);
 
