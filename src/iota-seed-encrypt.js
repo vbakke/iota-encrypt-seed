@@ -11,10 +11,10 @@ const base32 = require('base32.js');
 // const sha256 = require('sha256');
 
 
+const VERSION = 0x01;
 const SEED_LEN = 32;
 const SALT_LEN = 8;
 const CHECK_LEN = 4;
-const VERSION = 0x01;
 const BASE32_TYPE = 'crockford';
 const VALID_ENCODINGS = ['bip39', 'hex', 'HEX', 'binary'];
 
@@ -222,10 +222,6 @@ function mnemonicToSeed(mnemonic) {
 }
 
 
-function extendArray(arr, len) {
-    const zero = new Uint8Array(len - arr.length);
-    return merge(zero, arr);
-}
 function merge(...args) {
     let len = 0;
     for (let arr of args) len += arr.length;
