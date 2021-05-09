@@ -25,7 +25,13 @@ module.exports = function () {
             {
                 seed: "BAD0005EED000102030405060708090A0B0C0D0E0F10111213141516171819FF",
                 salt: [1, 2, 3, 4, 5, 6, 7, 8],
-                toughness: 0,
+                encrypted: '07Y5F5PDJ3MDE3WZQ0F9F17SDWTV986RFN9K5FVAED0W7E8VGSN7C0820C20A1G713WDQNHX'
+            },
+            {
+                seed: "BAD0005EED000102030405060708090A0B0C0D0E0F10111213141516171819FF",
+                salt: [1, 2, 3, 4, 5, 6, 7, 8],
+                //passphrase: 'Ƥāssφräsę',
+                passphrase: 'Ƥa\u0304ssφra\u0308se\u0328',  // Same password as above, but with Unicode combnations
                 encrypted: '07Y5F5PDJ3MDE3WZQ0F9F17SDWTV986RFN9K5FVAED0W7E8VGSN7C0820C20A1G713WDQNHX'
             },
             {
