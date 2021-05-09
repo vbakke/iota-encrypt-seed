@@ -15,6 +15,7 @@ const VERSION = 0x01;
 const SEED_LEN = 32;
 const SALT_LEN = 8;
 const CHECK_LEN = 4;
+const ADDR_LEN = 64;
 const BASE32_TYPE = 'crockford';
 const VALID_ENCODINGS = ['bip39', 'hex', 'HEX', 'binary'];
 
@@ -176,6 +177,7 @@ function guessEncoding(seed) {
         else if (seed.match(/^[0-9A-F]+$/) && seed.length === SEED_LEN*2) return 'HEX';
         else if (seed.match(/^[0-9a-fA-F]+$/) && seed.length === SEED_LEN*2) return 'hex';
         else if (seed.match(/^[0-9A-TV-Z]+$/) && seed.length === Math.ceil((1+SEED_LEN+SALT_LEN+CHECK_LEN)/5)*8) return 'ENCRYPTED';
+        else if (seed.match(/^iota1[0-9a-z]+$/) && seed.length === ADDR_LEN) return 'ADDRESS';
     }
     
     return undefined;
