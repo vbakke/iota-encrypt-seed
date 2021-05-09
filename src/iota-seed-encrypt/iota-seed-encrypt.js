@@ -170,7 +170,7 @@ function guessEncoding(seed) {
     else if (Array.isArray(seed)) return 'binary';
     else if (typeof seed === 'string') {
         seed = seed.trim();
-        if (seed.match(/^[0-9a-fA-F]$/) && seed.length === SEED_LEN*2) return 'hex';
+        if (seed.match(/^[0-9a-fA-F]+$/) && seed.length === SEED_LEN*2) return 'hex';
         else if (seed.split(/\s+/).length == SEED_LEN/4*3) return 'bip39';
     }
     
