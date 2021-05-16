@@ -1,14 +1,14 @@
 {
-  "name": "iota-encrypt-seed",
-  "version": "0.0.1",
+  "name": "iota-paper-encryption",
+  "version": "0.1.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "test": "mocha test"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "https://github.com/vbakke",
+  "license": "MIT",
   "dependencies": {
     "base32.js": "^0.1.0",
     "bip39": "^3.0.3",
@@ -17,6 +17,6 @@
   },
   "devDependencies": {
     "chai": "^4.3.4",
-    "mocha": "^8.3.2"
+    "mocha": "^8.4.0"
   }
 }

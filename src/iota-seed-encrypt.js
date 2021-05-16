@@ -60,7 +60,7 @@ async function decryptSeed(encrypted, passphrase, encoding) {
     let version =  info.version;
 
     if (version !== VERSION) {
-        throw Error('Encrypted seed is unknown version.');
+        throw Error('Encrypted seed is unknown version.');  // Version is not encrypted. Safe to tell the user the reason.
     }
 
     let len = SEED_LEN;
@@ -217,7 +217,10 @@ function seedToMnemonic(seed) {
 }
 
 function mnemonicToSeed(mnemonic) {
-    mnemonic = mnemonic.replace(/\s+/g, ' ');
+    mnemonic = mnemonic.trim().replace(/\s+/g, ' ');  // Remove and duplicate whitespaces, newlines etc between words
+    if (!bip39.validateMnemonic(mnemonic)) {
+        throw Error('Incorrect BIP39 mnemonic');
+    }
     let seed = bip39.mnemonicToEntropy(mnemonic);
     seed = decodeSeedToBytes(seed, 'hex');
     return seed;
