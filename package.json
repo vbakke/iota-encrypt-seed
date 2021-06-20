@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "description": "",
   "main": "index.js",
+  "keywords": [
+    "iota",
+    "encryption",
+    "paper-wallet",
+    "argon2"
+  ],
+
   "scripts": {
     "start": "node index.js",
     "test": "mocha test"
