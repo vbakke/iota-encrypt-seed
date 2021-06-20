@@ -9,7 +9,13 @@
     "paper-wallet",
     "argon2"
   ],
-
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vbakke/iota-paper-encryption.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vbakke/iota-paper-encryption/issues"
+  },
   "scripts": {
     "start": "node index.js",
     "test": "mocha test"
